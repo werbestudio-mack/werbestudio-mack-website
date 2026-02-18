@@ -35,6 +35,26 @@ const DEFAULT_PROJECTS: Project[] = [
   }
 ];
 
+// Kleine interne Hilfskomponente für die Rechtstexte
+const LegalView: React.FC<{ title: string; content: string; onBack: () => void }> = ({ title, content, onBack }) => (
+  <motion.section 
+    initial={{ opacity: 0, y: 20 }} 
+    animate={{ opacity: 1, y: 0 }} 
+    exit={{ opacity: 0 }}
+    className="pt-40 pb-20 px-6 min-h-screen max-w-4xl mx-auto"
+  >
+    <button onClick={onBack} className="mb-12 text-[10px] uppercase tracking-widest text-zinc-500 hover:text-[#ef7800] transition-colors flex items-center gap-2">
+      ← Zurück
+    </button>
+    <h1 className="text-5xl md:text-7xl font-display font-bold tracking-tighter mb-12 uppercase">{title}</h1>
+    <div className="prose prose-invert max-w-none">
+      <p className="text-zinc-400 leading-relaxed whitespace-pre-wrap font-light text-lg">
+        {content}
+      </p>
+    </div>
+  </motion.section>
+);
+
 const App: React.FC = () => {
   const [activePage, setActivePage] = useState<Page>(Page.Home);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -120,6 +140,24 @@ const App: React.FC = () => {
 
           {activePage === Page.Contact && <Contact />}
           {activePage === Page.Admin && <Admin projects={projects} setProjects={setProjects} legalContent={legalContent} setLegalContent={setLegalContent} />}
+          
+          {activePage === Page.Impressum && (
+            <LegalView 
+              key="impressum" 
+              title="Impressum" 
+              content={legalContent.impressum} 
+              onBack={() => handlePageChange(Page.Home)} 
+            />
+          )}
+          
+          {activePage === Page.Datenschutz && (
+            <LegalView 
+              key="datenschutz" 
+              title="Datenschutz" 
+              content={legalContent.datenschutz} 
+              onBack={() => handlePageChange(Page.Home)} 
+            />
+          )}
           
           {activePage === Page.ProjectDetail && selectedProject && (
             <ProjectDetail project={selectedProject} onBack={() => handlePageChange(Page.Portfolio)} onContact={() => handlePageChange(Page.Contact)} />
