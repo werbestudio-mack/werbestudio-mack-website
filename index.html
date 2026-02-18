@@ -15,7 +15,7 @@
         background-color: #050505;
         color: #ffffff;
         overflow-x: hidden;
-        cursor: none; /* Hide default cursor for custom cursor */
+        cursor: none;
       }
       h1, h2, h3, .font-display {
         font-family: 'Space Grotesk', sans-serif;
@@ -24,7 +24,6 @@
         background: #ef7800;
         color: white;
       }
-      /* Custom scrollbar */
       ::-webkit-scrollbar {
         width: 8px;
       }
@@ -38,8 +37,6 @@
       ::-webkit-scrollbar-thumb:hover {
         background: #333;
       }
-      
-      /* Noise Effect */
       .noise {
         position: fixed;
         top: -50%;
@@ -69,8 +66,6 @@
         90% { transform: translate(10%,5%) }
         100% { transform: translate(5%,0) }
       }
-
-      /* Image perspective effect helper */
       .perspective-card {
         perspective: 1000px;
       }
@@ -80,6 +75,7 @@
   "imports": {
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "framer-motion": "https://esm.sh/framer-motion@^12.34.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.48.1",
     "react/": "https://esm.sh/react@^19.2.4/",
     "react": "https://esm.sh/react@^19.2.4"
   }

@@ -7,13 +7,13 @@ import { Services } from './components/Services';
 import { Portfolio } from './components/Portfolio';
 import { Contact } from './components/Contact';
 import { Footer } from './components/Footer';
-import { ServiceDetail } from './components/ServiceDetail';
 import { ProjectDetail } from './components/ProjectDetail';
 import { Admin } from './components/Admin';
 import { CustomCursor } from './components/CustomCursor';
 import { CookieConsent } from './components/CookieConsent';
 import { Page, Project, LegalContent } from './types';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from './supabase';
 
 const DEFAULT_LEGAL: LegalContent = {
   impressum: "MACK Digital Agency\nBruchsaler Straße 4a\n74918 Angelbachtal\n\nVertreten durch: [Ihr Name]\nKontakt: hello@mack-digital.de",
@@ -39,26 +39,61 @@ const App: React.FC = () => {
   const [activePage, setActivePage] = useState<Page>(Page.Home);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [projects, setProjects] = useState<Project[]>(() => {
-    const saved = localStorage.getItem('mack_projects');
-    return saved ? JSON.parse(saved) : DEFAULT_PROJECTS;
-  });
-  const [legalContent, setLegalContent] = useState<LegalContent>(() => {
-    const saved = localStorage.getItem('mack_legal');
-    return saved ? JSON.parse(saved) : DEFAULT_LEGAL;
-  });
+  const [projects, setProjects] = useState<Project[]>(DEFAULT_PROJECTS);
+  const [legalContent, setLegalContent] = useState<LegalContent>(DEFAULT_LEGAL);
 
+  // Data Fetching
   useEffect(() => {
-    localStorage.setItem('mack_projects', JSON.stringify(projects));
-  }, [projects]);
+    const fetchData = async () => {
+      try {
+        // Fetch Projects
+        const { data: projData, error: projError } = await supabase
+          .from('projects')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-  useEffect(() => {
-    localStorage.setItem('mack_legal', JSON.stringify(legalContent));
-  }, [legalContent]);
+        if (projError) throw projError;
+        if (projData && projData.length > 0) {
+          // Map snake_case to camelCase
+          setProjects(projData.map(p => ({
+            ...p,
+            shortDescription: p.short_description,
+            longDescription: p.long_description,
+            previewImageIndex: p.preview_image_index
+          })));
+        } else {
+          // Fallback to localStorage if no DB data
+          const saved = localStorage.getItem('mack_projects');
+          if (saved) setProjects(JSON.parse(saved));
+        }
 
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1500);
-    return () => clearTimeout(timer);
+        // Fetch Legal
+        const { data: legalData, error: legalError } = await supabase
+          .from('legal_content')
+          .select('*')
+          .single();
+
+        if (!legalError && legalData) {
+          setLegalContent({
+            impressum: legalData.impressum,
+            datenschutz: legalData.datenschutz
+          });
+        } else {
+          const saved = localStorage.getItem('mack_legal');
+          if (saved) setLegalContent(JSON.parse(saved));
+        }
+      } catch (err) {
+        console.error('Backend connection failed, using local storage:', err);
+        const savedProjects = localStorage.getItem('mack_projects');
+        if (savedProjects) setProjects(JSON.parse(savedProjects));
+        const savedLegal = localStorage.getItem('mack_legal');
+        if (savedLegal) setLegalContent(JSON.parse(savedLegal));
+      } finally {
+        setTimeout(() => setIsLoading(false), 1000);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const handlePageChange = (page: Page) => {
@@ -81,7 +116,7 @@ const App: React.FC = () => {
   return (
     <div className="relative min-h-screen bg-[#050505] text-white selection:bg-[#ef7800]/30 overflow-hidden">
       <CustomCursor />
-      <CookieConsent onAccept={() => { /* Handled via local storage in component */ }} />
+      <CookieConsent onAccept={() => {}} />
       
       <AnimatePresence>
         {isLoading && (
@@ -95,7 +130,7 @@ const App: React.FC = () => {
 
       <main className="relative z-10">
         <AnimatePresence mode="wait">
-          {activePage === Page.Home && (
+          {!isLoading && activePage === Page.Home && (
             <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <Hero onNavigate={() => handlePageChange(Page.Portfolio)} />
               <About />
@@ -103,7 +138,7 @@ const App: React.FC = () => {
             </motion.div>
           )}
 
-          {activePage === Page.Portfolio && (
+          {!isLoading && activePage === Page.Portfolio && (
             <motion.div key="portfolio" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <Portfolio projects={projects} onProjectClick={(id) => { setSelectedProjectId(id); handlePageChange(Page.ProjectDetail); }} />
             </motion.div>
@@ -116,7 +151,12 @@ const App: React.FC = () => {
 
           {activePage === Page.Admin && (
             <motion.div key="admin" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <Admin projects={projects} setProjects={setProjects} legalContent={legalContent} setLegalContent={setLegalContent} />
+              <Admin 
+                projects={projects} 
+                setProjects={setProjects} 
+                legalContent={legalContent} 
+                setLegalContent={setLegalContent} 
+              />
             </motion.div>
           )}
 
