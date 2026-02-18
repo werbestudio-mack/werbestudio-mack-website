@@ -1,23 +1,23 @@
 
 import React, { useState, useEffect } from 'react';
-import { Navbar } from './components/Navbar';
-import { Hero } from './components/Hero';
-import { About } from './components/About';
-import { Services } from './components/Services';
-import { Portfolio } from './components/Portfolio';
-import { Contact } from './components/Contact';
-import { Footer } from './components/Footer';
-import { ProjectDetail } from './components/ProjectDetail';
-import { Admin } from './components/Admin';
-import { CustomCursor } from './components/CustomCursor';
-import { CookieConsent } from './components/CookieConsent';
-import { Page, Project, LegalContent } from './types';
+import { Navbar } from './components/Navbar.tsx';
+import { Hero } from './components/Hero.tsx';
+import { About } from './components/About.tsx';
+import { Services } from './components/Services.tsx';
+import { Portfolio } from './components/Portfolio.tsx';
+import { Contact } from './components/Contact.tsx';
+import { Footer } from './components/Footer.tsx';
+import { ProjectDetail } from './components/ProjectDetail.tsx';
+import { Admin } from './components/Admin.tsx';
+import { CustomCursor } from './components/CustomCursor.tsx';
+import { CookieConsent } from './components/CookieConsent.tsx';
+import { Page, Project, LegalContent } from './types.ts';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from './supabase';
+import { supabase } from './supabase.ts';
 
 const DEFAULT_LEGAL: LegalContent = {
-  impressum: "MACK Digital Agency\nBruchsaler Straße 4a\n74918 Angelbachtal\n\nVertreten durch: [Ihr Name]\nKontakt: hello@mack-digital.de",
-  datenschutz: "DATENSCHUTZERKLÄRUNG\n\n1. Datenschutz auf einen Blick\nAllgemeine Hinweise\nDie folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert..."
+  impressum: "MACK Digital Agency\nBruchsaler Straße 4a\n74918 Angelbachtal\n\nVertreten durch: Mack Digital\nKontakt: hello@mack-digital.de",
+  datenschutz: "DATENSCHUTZERKLÄRUNG\n\n1. Datenschutz auf einen Blick..."
 };
 
 const DEFAULT_PROJECTS: Project[] = [
@@ -26,12 +26,12 @@ const DEFAULT_PROJECTS: Project[] = [
     title: 'Aurelia AI', 
     client: 'Aurelia Tech', 
     category: 'AI Architecture',
-    categories: ['AI', 'Neural Tech', 'Future'],
-    images: ['https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=1632', 'https://images.unsplash.com/photo-1620712943543-bcc4628c9757?q=80&w=1632'], 
+    categories: ['AI', 'Neural Tech'],
+    images: ['https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=1632'], 
     previewImageIndex: 0,
     year: '2024', 
-    shortDescription: 'Zukunftsweisende KI-Architektur für Datenanalyse.',
-    longDescription: 'Ein bahnbrechendes KI-System zur Analyse komplexer Datenstrukturen. Wir haben das gesamte Interface-Design und die visuelle Kommunikation für den Launch dieses Projekts übernommen.',
+    shortDescription: 'Zukunftsweisende KI-Architektur.',
+    longDescription: 'Ein bahnbrechendes KI-System zur Analyse komplexer Datenstrukturen.',
   }
 ];
 
@@ -42,32 +42,23 @@ const App: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>(DEFAULT_PROJECTS);
   const [legalContent, setLegalContent] = useState<LegalContent>(DEFAULT_LEGAL);
 
-  // Data Fetching
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch Projects
         const { data: projData, error: projError } = await supabase
           .from('projects')
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (projError) throw projError;
-        if (projData && projData.length > 0) {
-          // Map snake_case to camelCase
+        if (!projError && projData && projData.length > 0) {
           setProjects(projData.map(p => ({
             ...p,
             shortDescription: p.short_description,
             longDescription: p.long_description,
             previewImageIndex: p.preview_image_index
           })));
-        } else {
-          // Fallback to localStorage if no DB data
-          const saved = localStorage.getItem('mack_projects');
-          if (saved) setProjects(JSON.parse(saved));
         }
 
-        // Fetch Legal
         const { data: legalData, error: legalError } = await supabase
           .from('legal_content')
           .select('*')
@@ -78,18 +69,11 @@ const App: React.FC = () => {
             impressum: legalData.impressum,
             datenschutz: legalData.datenschutz
           });
-        } else {
-          const saved = localStorage.getItem('mack_legal');
-          if (saved) setLegalContent(JSON.parse(saved));
         }
       } catch (err) {
-        console.error('Backend connection failed, using local storage:', err);
-        const savedProjects = localStorage.getItem('mack_projects');
-        if (savedProjects) setProjects(JSON.parse(savedProjects));
-        const savedLegal = localStorage.getItem('mack_legal');
-        if (savedLegal) setLegalContent(JSON.parse(savedLegal));
+        console.error('Backend fallback:', err);
       } finally {
-        setTimeout(() => setIsLoading(false), 1000);
+        setTimeout(() => setIsLoading(false), 800);
       }
     };
 
@@ -103,18 +87,8 @@ const App: React.FC = () => {
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
-  const LegalPage = ({ title, content }: { title: string, content: string }) => (
-    <div className="pt-40 pb-40 px-6 max-w-4xl mx-auto">
-      <h1 className="text-5xl font-display font-bold mb-16 tracking-tighter">{title}.</h1>
-      <div className="text-zinc-400 font-light leading-relaxed whitespace-pre-wrap text-lg">
-        {content}
-      </div>
-      <button onClick={() => handlePageChange(Page.Home)} className="mt-20 text-[10px] font-bold uppercase tracking-widest text-[#ef7800] hover:text-white transition-colors">← Zurück zur Startseite</button>
-    </div>
-  );
-
   return (
-    <div className="relative min-h-screen bg-[#050505] text-white selection:bg-[#ef7800]/30 overflow-hidden">
+    <div className="relative min-h-screen bg-[#050505] text-white overflow-hidden">
       <CustomCursor />
       <CookieConsent onAccept={() => {}} />
       
@@ -144,26 +118,11 @@ const App: React.FC = () => {
             </motion.div>
           )}
 
-          {activePage === Page.Contact && <motion.div key="contact" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><Contact /></motion.div>}
+          {activePage === Page.Contact && <Contact />}
+          {activePage === Page.Admin && <Admin projects={projects} setProjects={setProjects} legalContent={legalContent} setLegalContent={setLegalContent} />}
           
-          {activePage === Page.Impressum && <LegalPage title="IMPRESSUM" content={legalContent.impressum} />}
-          {activePage === Page.Datenschutz && <LegalPage title="DATENSCHUTZ" content={legalContent.datenschutz} />}
-
-          {activePage === Page.Admin && (
-            <motion.div key="admin" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <Admin 
-                projects={projects} 
-                setProjects={setProjects} 
-                legalContent={legalContent} 
-                setLegalContent={setLegalContent} 
-              />
-            </motion.div>
-          )}
-
           {activePage === Page.ProjectDetail && selectedProject && (
-            <motion.div key="project-detail" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <ProjectDetail project={selectedProject} onBack={() => handlePageChange(Page.Portfolio)} onContact={() => handlePageChange(Page.Contact)} />
-            </motion.div>
+            <ProjectDetail project={selectedProject} onBack={() => handlePageChange(Page.Portfolio)} onContact={() => handlePageChange(Page.Contact)} />
           )}
         </AnimatePresence>
       </main>
